@@ -1,0 +1,13 @@
+/* css/popup.css */
+body {
+  width: 300px;
+  font-family: sans-serif;
+}
+
+.container {
+  padding: 10px;
+}
+
+#status {
+  font-weight: bold;
+}
