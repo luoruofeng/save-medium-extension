@@ -7,12 +7,28 @@
 </head>
 <body>
     <div class="container">
-        <button id="saveBtn">保存为HTML</button>
-        <button id="configBtn">配置保存路径</button>
+        <div style="display:flex;justify-content:center;align-items:center;gap:10px;">
+            <button id="saveBtn">保存文章</button>
+            <button id="configBtn" style="background-color:#e53935;color:#fff;">配置</button>
+        </div>
+        <form id="configForm" style="display:none;margin-top:10px;text-align:left;">
+            <label for="openaiUrl" style="font-size:14px;">OpenAI API URL:</label><br>
+            <input type="text" id="openaiUrl" name="openaiUrl" style="width:100%;margin-bottom:6px;"><br>
+            <label for="openaiKey" style="font-size:14px;">OpenAI API Key:</label><br>
+            <input type="password" id="openaiKey" name="openaiKey" style="width:100%;margin-bottom:6px;"><br>
+            <label for="openaiModel" style="font-size:14px;">OpenAI API Model:</label><br>
+            <input type="text" id="openaiModel" name="openaiModel" style="width:100%;margin-bottom:6px;" placeholder="qwen-max-latest"><br>
+            <button type="button" id="saveConfigBtn" style="background-color:#e53935;color:#fff;width:100%;">保存配置</button>
+        </form>
+        <div id="configShow" style="font-size:12px;color:#333;margin-top:6px;word-break:break-all;"></div>
         <div id="status" style="margin-top:10px;display:none;">
             <img id="loadingIcon" src="images/loading.gif" style="width:20px;vertical-align:middle;display:inline;">
             <span id="countdown"></span>
         </div>
+        <div id="popupMask" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;background:rgba(0,0,0,0.5);color:#fff;justify-content:center;align-items:center;font-size:28px;">
+            正在访问大模型...
+        </div>
+        <div id="saveStatus" style="margin-top:10px;color:#333;text-align:center;"></div>
     </div>
     <div id="popupCountdown" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;pointer-events:none;justify-content:center;align-items:center;">
         <span id="popupCountdownText" style="background:rgba(0,0,0,0.7);color:#fff;padding:20px 40px;border-radius:12px;font-size:28px;"></span>

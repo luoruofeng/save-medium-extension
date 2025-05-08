@@ -15,8 +15,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         }
                     }, (pdfData) => {
                         chrome.storage.sync.get(['savePath'], (result) => {
-                            const path = result.savePath || 'Downloads';
-                            const fileName = `${path}/${new Date().toISOString().slice(0,10)}.pdf`;
+                            const fileName = result.savePath ? `${result.savePath}/${new Date().toISOString().slice(0,10)}.pdf` : `${new Date().toISOString().slice(0,10)}.pdf`;
                             chrome.downloads.download({
                                 url: pdfData,
                                 filename: fileName,
