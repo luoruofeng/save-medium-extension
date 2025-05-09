@@ -18,6 +18,21 @@
             <input type="password" id="openaiKey" name="openaiKey" style="width:100%;margin-bottom:6px;"><br>
             <label for="openaiModel" style="font-size:14px;">OpenAI API Model:</label><br>
             <input type="text" id="openaiModel" name="openaiModel" style="width:100%;margin-bottom:6px;" placeholder="qwen-max-latest"><br>
+            <div style="margin-bottom:6px;">
+                <input type="checkbox" id="translateToChinese" name="translateToChinese">
+                <label for="translateToChinese" style="font-size:14px;">翻译为中文</label>
+            </div>
+            <div style="margin-bottom:6px;">
+                <label for="afterPrompt" style="font-size:14px;">后操作：</label>
+                <!-- 找到后处理输入框 -->
+                <textarea 
+                    id="afterPrompt" 
+                    class="form-control" 
+                    rows="7"  <!-- 修改rows属性为7行 -->
+                    placeholder="输入后处理指令（可选）"
+                    style="height: 140px; padding: 8px; margin: 6px 0; border: 1px solid #ced4da; border-radius: 4px;"
+                ></textarea>
+            </div>
             <button type="button" id="saveConfigBtn" style="background-color:#e53935;color:#fff;width:100%;">保存配置</button>
         </form>
         <div id="configShow" style="font-size:12px;color:#333;margin-top:6px;word-break:break-all;"></div>

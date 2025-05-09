@@ -36,19 +36,74 @@ chrome.storage.sync.get(['openaiUrl', 'openaiKey', 'openaiModel'], (result) => {
 });
 
 // 保存配置
-saveConfigBtn.addEventListener('click', () => {
-  const url = openaiUrlInput.value.trim();
-  const key = openaiKeyInput.value.trim();
-  const model = openaiModelInput.value.trim() || 'qwen-max-latest';
-  if (!url || !key) {
-    alert('请填写完整的URL和KEY');
-    return;
-  }
-  chrome.storage.sync.set({ openaiUrl: url, openaiKey: key, openaiModel: model }, () => {
-    alert('配置已保存');
-    configForm.style.display = 'none';
-    showConfigInfo(url, key, model);
-  });
+// 修改配置保存时的显示逻辑
+document.getElementById('saveConfigBtn').addEventListener('click', () => {
+    const openaiUrl = document.getElementById('openaiUrl').value;
+    const openaiKey = document.getElementById('openaiKey').value;
+    const openaiModel = document.getElementById('openaiModel').value;
+    const translateToChinese = document.getElementById('translateToChinese').checked;
+    const afterPrompt = document.getElementById('afterPrompt').value;
+    chrome.storage.sync.set({ 
+        openaiUrl,
+        openaiKey,
+        openaiModel,
+        translateToChinese,
+        afterPrompt  // 新增参数存储
+    }, () => {
+        document.getElementById('configShow').innerHTML = 
+            `当前配置：<br>
+            API地址：${openaiUrl}<br>
+            模型：${openaiModel}<br>
+            翻译中文：${translateToChinese ? '是' : '否'}<br>
+            后操作指令：${afterPrompt || '未设置'}`; 
+            
+        // 隐藏配置表单
+        document.getElementById('configForm').style.display = 'none';
+    });
+});
+
+// 修改配置加载时的显示初始化
+// 修改配置加载函数
+function loadConfig() {
+    chrome.storage.sync.get(['openaiUrl', 'openaiKey', 'openaiModel', 'translateToChinese', 'afterPrompt'], (result) => {
+        document.getElementById('translateToChinese').checked = result.translateToChinese || false;
+        document.getElementById('afterPrompt').value = result.afterPrompt || '';
+        // 初始化配置显示
+        document.getElementById('configShow').innerHTML = 
+            `当前配置状态：<br>
+            翻译中文：${result.translateToChinese ? '✅已启用' : '❌未启用'}<br>
+            后处理指令：${result.afterPrompt ? '✅已设置' : '❌未设置'}`;
+    });
+}
+
+// 在DOM加载完成后立即执行初始化
+document.addEventListener('DOMContentLoaded', () => {
+    loadConfig();
+    // 保持原有的配置加载逻辑...
+});
+
+// 修改配置保存回调
+document.getElementById('saveConfigBtn').addEventListener('click', () => {
+    const openaiUrl = document.getElementById('openaiUrl').value;
+    const openaiKey = document.getElementById('openaiKey').value;
+    const openaiModel = document.getElementById('openaiModel').value;
+    const translateToChinese = document.getElementById('translateToChinese').checked;
+    const afterPrompt = document.getElementById('afterPrompt').value;
+    chrome.storage.sync.set({ 
+        openaiUrl,
+        openaiKey,
+        openaiModel,
+        translateToChinese,
+        afterPrompt
+    }, () => {
+        // 更新显示最新状态
+        document.getElementById('configShow').innerHTML = 
+            `当前配置状态：<br>
+            翻译中文：${translateToChinese ? '✅已启用' : '❌未启用'}<br>
+            后处理指令：${afterPrompt ? '✅已设置' : '❌未设置'}`;
+        // 隐藏配置表单
+        document.getElementById('configForm').style.display = 'none';
+    });
 });
 
 // 保存按钮点击处理

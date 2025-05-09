@@ -38,7 +38,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             html = cleanHTML(html)
             
             // 设置OpenAI API参数的方法
-            window.setOpenAIConfig = function(url, key, model) {
+            window.setOpenAIConfig = function(url, key, model,translateToChinese,afterPrompt) {
+                // 新增配置参数日志
+                console.log("[配置参数] URL:", url, "Model:", model, "翻译:", translateToChinese, "后操作提示:", afterPrompt);
                 // 如果${baseURL}是"/"结尾则去掉
                 if (url.endsWith("/")) {
                     url = url.slice(0, -1); // 去掉最后一个字符
@@ -47,7 +49,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 window.OPENAI_API_URL = url;
                 window.OPENAI_API_KEY = key;
                 window.OPENAI_API_MODEL = model;
-                console.log("设置OpenAI API参数:"+window.OPENAI_API_URL, window.OPENAI_API_KEY, window.OPENAI_API_MODEL)
+                window.OPENAI_API_TRANSLATE_TO_CHINESE = translateToChinese;
+                window.OPENAI_API_AFTER_PROMPT = afterPrompt;
+                console.log("设置OpenAI API参数:"+window.OPENAI_API_URL, window.OPENAI_API_KEY, window.OPENAI_API_MODEL, window.OPENAI_API_TRANSLATE_TO_CHINESE)
             }
 
 
@@ -106,28 +110,46 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             // 调用OpenAI API处理内容
             (async () => {
                 try {
-                    // 用同步方法getStorageSync替换chrome.storage.sync.get
-                    const result = await getStorageSync(['openaiUrl', 'openaiKey', 'openaiModel']);
-                    window.setOpenAIConfig(result.openaiUrl, result.openaiKey, result.openaiModel);
+                    const result = await getStorageSync(['openaiUrl', 'openaiKey', 'openaiModel', 'translateToChinese', 'afterPrompt']);
+                    window.setOpenAIConfig(
+                        result.openaiUrl, 
+                        result.openaiKey, 
+                        result.openaiModel, 
+                        result.translateToChinese || false,
+                        result.afterPrompt || ''
+                    );
 
                     const prompt = '根据文章语义将下面文章中的无效和错误内容去掉，返回正确内容，不要返回其他任何信息：' + html;
                     html = await askOpenAISync(prompt);
+
+                    // 翻译逻辑
+                    if(window.OPENAI_API_TRANSLATE_TO_CHINESE) {
+                        const translatePrompt = '将下面文章翻译为中文：' + html;
+                        html = await askOpenAISync(translatePrompt);
+                    }
+                    
+                    
+                    // 提取文件名和内容（保持原有逻辑）
                     // 3. 提取第一句话作为文件名和标题，并删除第一句话
                     let firstSentence = '';
                     let restContent = '';
                     // 匹配第一个段落（以两个换行符为分隔）
-                    const match = html.match(/^([\s\S]*?)(\n\n|$)/);
+                    const match = html.match(/^([^\n\r]+)([\n\r]+|$)/);
                     if (match) {
-                        firstSentence = match[1].replace(/\r|\n/g, '').trim();
+                        firstSentence = match[1].trim();
                         restContent = html.slice(match[0].length).trim();
                     } else {
-                        firstSentence = html.split(/\r?\n/)[0].trim();
-                        restContent = html.slice(firstSentence.length).trim();
+                        firstSentence = html.trim();
+                        restContent = '';
                     }
                     const fileName = firstSentence + '.txt';
-                    // print filename
-                    console.log(`fileName:${fileName}`);
-                    const title = firstSentence;
+                    // 后处理逻辑（新增）
+                    if(window.OPENAI_API_AFTER_PROMPT) {
+                        const afterPrompt = `${window.OPENAI_API_AFTER_PROMPT}:\n\n${restContent}`;
+                        restContent = await askOpenAISync(afterPrompt);
+                    }
+                    const restContentLength = restContent.length;  // 新增变量获取内容长度
+                    console.log(`[文件操作] 生成文件名: ${fileName} 内容长度: ${restContentLength}`);  // 移动到此处
 
                     const fullPath = fileName;
                     const blob = new Blob([restContent], {type: 'text/plain;charset=utf-8'});
@@ -140,13 +162,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
 
-                    // 4. 移除倒计时浮窗
-                    if (floatDiv) floatDiv.remove();
-
+                    // 4. 更新浮窗显示结果（移除浮窗移除代码）
+                    // 修改成功后的浮窗处理逻辑（移除自动渐隐）
+                    if (floatDiv) {
+                        floatDiv.textContent = `保存成功：${fullPath}`;
+                        floatDiv.style.backgroundColor = '#4CAF50'; // 保持绿色背景
+                        // 删除所有setTimeout调用
+                    }
+                    
+                    // 修改失败后的浮窗处理逻辑（移除自动渐隐）
+                    if (floatDiv) {
+                        floatDiv.textContent = `保存失败：${e.message}`;
+                        floatDiv.style.backgroundColor = '#ff4444'; 
+                        // 删除所有setTimeout调用
+                    }
+                    
+                    // 添加自动渐隐效果
+                    setTimeout(() => {
+                        floatDiv.style.opacity = '0';
+                        setTimeout(() => floatDiv.remove(), 1000);
+                    }, 5000);
+                    
                     // 5. 通知popup保存完成，返回文件路径
                     if (sendResponse) sendResponse({filePath: fullPath});
                 } catch (e) {
-                    if (floatDiv) floatDiv.remove();
+                    if (floatDiv) {
+                        floatDiv.textContent = `保存失败：${e.message}`; // 显示错误信息
+                        floatDiv.style.backgroundColor = '#ff4444'; // 改为红色背景
+                        // 添加自动渐隐效果
+                        setTimeout(() => {
+                            floatDiv.style.opacity = '0';
+                            setTimeout(() => floatDiv.remove(), 1000);
+                        }, 5000);
+                    }
                     if (sendResponse) sendResponse({error: e.message || String(e)});
                 }
             })();
