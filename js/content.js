@@ -142,6 +142,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         firstSentence = html.trim();
                         restContent = '';
                     }
+                    restContent = firstSentence +"\n"+ restContent // 后面的内容第一行还是标题
                     const fileName = firstSentence + '.txt';
                     // 后处理逻辑（新增）
                     if(window.OPENAI_API_AFTER_PROMPT) {
